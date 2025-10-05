@@ -77,6 +77,11 @@ class AuthMethodsView(SecuredAPIView):
         }, headers=RATE_LIMIT_HEADERS)
 
 # Re-export SimpleJWT views so they appear in docs under /api/auth/jwt/*
-class JWTTokenObtainPairView(TokenObtainPairView): permission_classes = [permissions.AllowAny]
-class JWTTokenRefreshView(TokenRefreshView): permission_classes = [permissions.AllowAny]
-class JWTTokenVerifyView(TokenVerifyView): permission_classes = [permissions.AllowAny]
+class JWTTokenObtainPairView(TokenObtainPairView):
+    permission_classes = [permissions.AllowAny]
+
+class JWTTokenRefreshView(TokenRefreshView):
+    permission_classes = [permissions.AllowAny]
+
+class JWTTokenVerifyView(TokenVerifyView):
+    permission_classes = [permissions.AllowAny]

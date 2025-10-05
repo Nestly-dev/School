@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "drf_spectacular_sidecar",
     "authx",
+    "cachemgr",
     "rest_framework_simplejwt",
 ]
 
