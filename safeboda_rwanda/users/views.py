@@ -23,8 +23,13 @@ try:
     from .constants import RWANDA_DISTRICTS  # e.g., ["Gasabo", "Kicukiro", ...]
 except Exception:  # pragma: no cover
     RWANDA_DISTRICTS = [
-        "Gasabo", "Kicukiro", "Nyarugenge",  # basic Kigali fallback
-    ]
+    "Gasabo", "Kicukiro", "Nyarugenge",
+    "Burera", "Gakenke", "Gicumbi", "Musanze", "Rulindo",
+    "Gisagara", "Huye", "Kamonyi", "Muhanga", "Nyamagabe", "Nyanza", "Nyaruguru", "Ruhango",
+    "Bugesera", "Gatsibo", "Kayonza", "Kirehe", "Ngoma", "Nyagatare", "Rwamagana",
+    "Karongi", "Ngororero", "Nyabihu", "Nyamasheke", "Rubavu", "Rusizi", "Rutsiro"
+]
+
 
 from drf_spectacular.utils import extend_schema, OpenApiExample
 

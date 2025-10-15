@@ -5,7 +5,7 @@ from .views_auth import (
 )
 from .views_uas import (
     UASRegisterView, UASVerifyPhoneView, UASVerifyEmailView,
-    PasswordResetRequestView, PasswordResetConfirmView, UASAccountStatusView
+    PasswordResetRequestView, PasswordResetConfirmView, UASAccountStatusView, UASAccountRecoveryView
 )
 from .views_privacy import (
     DataExportView, DataDeletionRequestView, AuditLogView,
@@ -52,4 +52,6 @@ urlpatterns = [
     path("rbac/government/access-request/", GovernmentAccessRequestView.as_view(), name="rbac-gov-access"),
     path("rbac/audit/permissions/", PermissionAuditView.as_view(), name="rbac-audit"),
     path("rbac/create-role/", CreateRoleView.as_view(), name="rbac-create-role"),
+    
+    path("uas/account/recover/", UASAccountRecoveryView.as_view(), name="uas-account-recover"),
 ]
