@@ -124,3 +124,92 @@ class AsyncLocationService:
     async def batch_reverse(points: Iterable[Tuple[float, float]]):
         tasks = [AsyncLocationService.reverse_geocode(lat, lng) for lat, lng in points]
         return await asyncio.gather(*tasks, return_exceptions=False)
+
+
+class LocationService:
+    """
+    Synchronous wrapper for AsyncLocationService
+    Used by booking service for simpler integration
+    """
+
+    @staticmethod
+    def calculate_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+        """Calculate distance between two points using Haversine formula"""
+        return haversine_km(lat1, lng1, lat2, lng2)
+
+    @staticmethod
+    def reverse_geocode(lat: float, lng: float) -> Optional[str]:
+        """
+        Get address from coordinates (synchronous version)
+        Returns None if geocoding fails or times out
+        """
+        try:
+            # Try to get from cache first
+            cache_key = f"rev:{round(lat,5)},{round(lng,5)}"
+            hit, cached = reverse_cache.get(cache_key)
+            if hit:
+                return cached
+
+            # If not in cache, run async version with timeout
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                address, _ = loop.run_until_complete(
+                    asyncio.wait_for(
+                        AsyncLocationService.reverse_geocode(lat, lng),
+                        timeout=5.0  # 5 second timeout
+                    )
+                )
+                return address
+            except asyncio.TimeoutError:
+                return None
+            finally:
+                loop.close()
+        except Exception:
+            return None
+
+    @staticmethod
+    def calculate_route(origin_lat: float, origin_lng: float, dest_lat: float, dest_lng: float) -> Dict[str, Any]:
+        """
+        Calculate route between two points (synchronous version)
+        Returns distance and duration
+        """
+        try:
+            # Try async route calculation
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                km, minutes, success = loop.run_until_complete(
+                    asyncio.wait_for(
+                        AsyncLocationService.fetch_route_distance_time(
+                            (origin_lat, origin_lng),
+                            (dest_lat, dest_lng)
+                        ),
+                        timeout=5.0  # 5 second timeout
+                    )
+                )
+                return {
+                    'distance_km': km,
+                    'duration_minutes': minutes,
+                    'success': success
+                }
+            except asyncio.TimeoutError:
+                # Fallback to haversine calculation
+                km = haversine_km(origin_lat, origin_lng, dest_lat, dest_lng)
+                minutes = estimate_eta_minutes(km)
+                return {
+                    'distance_km': km,
+                    'duration_minutes': minutes,
+                    'success': False
+                }
+            finally:
+                loop.close()
+        except Exception:
+            # Fallback to haversine calculation
+            km = haversine_km(origin_lat, origin_lng, dest_lat, dest_lng)
+            minutes = estimate_eta_minutes(km)
+            return {
+                'distance_km': km,
+                'duration_minutes': minutes,
+                'success': False
+            }
