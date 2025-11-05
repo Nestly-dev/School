@@ -1,355 +1,256 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/VmFwbJXI)
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/RdMJltzD)
-[![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=21219505)
-# Guided Learning Activity
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/9-Jl7uxY)
+[![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=21479098)
+# Big3 Construction: Phase 2 - Optimizing & Automating Operations
 
-## Activity: Optimizing "Soko Yetu" with i18n and Redis
+## Project Overview
 
-**Estimated Time:** 2 Hours  
-**Project:** "Soko Yetu" Django Starter Code
+**Scenario:** Big3 Construction was thrilled with the normalized 5NF database your team delivered in the Design Activity. The data is clean, redundant-free, and an order of magnitude more reliable.
 
-## Overview
+Now that they've been using it for a few months, they've come back to you with a new set of "Phase 2" requirements. They don't just want to store data; they want to optimize performance, simplify access for different user roles, and automate common business processes.
 
-In our session, we saw how to cache a fully internationalized Django app. Now, it's your turn to build the entire pipeline from scratch.
+Your team has been retained to implement these advanced features.
 
-You will start with the "Soko Yetu" project before i18n has been implemented. You will first correctly add internationalization (i18n) and localization (l10n) for English and Swahili.
-
-Then, you will measure the "Double Bottleneck" (database + disk I/O) on your local machine.
-
-Finally, you will install and configure a local Redis cache to solve this bottleneck and make your multilingual app blazing fast.
+**Total Points:** 200 points  
+**Team Size:** 3 members (this is a pair programming assignment) 
 
 ## Learning Objectives
 
-By the end of this activity, you will be able to:
-
-- Implement full i18n and l10n in a Django project (models, templates, and URLs).
-- Generate, translate, and compile .po and .mo message files.
-- Run a local Redis instance using Docker for development.
-- Install and configure django-redis to connect Django to your Redis instance.
-- Implement i18n-aware template fragment caching using `{% cache %}`.
-- Measure and explain the performance difference between a cached and uncached request.
-
-## Requirements
-
-- The "Soko Yetu" starter project.
-- A Python virtual environment (venv).
-- A code editor (like VS Code).
-- Docker Desktop installed and running. (This is the easiest way to run Redis locally).
-
-## Part 1: Setup & Local Redis (30 Minutes)
-
-### Get the Starter Code
-Unzip the soko-yetu-starter project.
-
-### Create Environment
-Open a terminal in the project folder.
-
-```bash
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
-# or
-.\venv\Scripts\activate  # Windows
-```
-
-### Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### Run Redis Locally
-Make sure Docker Desktop is open and running.
-
-In your terminal, run this single command:
-
-```bash
-docker run -d -p 6379:6379 --name soko-redis redis:alpine
-```
-
-This command downloads a tiny Redis image, starts a container named soko-redis, and maps your computer's port 6379 to the container's port 6379. You can see it running in your Docker Desktop dashboard.
-
-### Prepare Django
-```bash
-python manage.py migrate
-python manage.py createsuperuser  # create an admin account
-python manage.py runserver
-```
-
-### Verify
-Open http://127.0.0.1:8000/. You should see the English-only "Soko Yetu" site. Open the admin at /admin/ and add 2-3 produce items (e.g., "Tomatoes", "Maize").
-
-## Part 2: Full i18n Implementation (60 Minutes)
-
-Now, let's fully internationalize the app.
-
-### Configure settings.py
-
-Open `myproject/settings.py`.
-
-Import os.
-
-Add LANGUAGES and LOCALE_PATHS:
-
-```python
-from django.utils.translation import gettext_lazy as _
-
-# ...
-
-LANGUAGES = [
-    ('en', _('English')),
-    ('sw', _('Swahili')),
-]
-
-LOCALE_PATHS = [
-    os.path.join(BASE_DIR, 'locale'),
-]
-```
-
-Find the MIDDLEWARE list and add `django.middleware.locale.LocaleMiddleware` (after SessionMiddleware but before CommonMiddleware is a good place).
-
-### Mark Model Strings
-
-Open `farm/models.py`.
-
-Import gettext_lazy: `from django.utils.translation import gettext_lazy as _`
-
-Mark the fields as translatable by adding `_()`:
-
-```python
-class Produce(models.Model):
-    name = models.CharField(_('name'), max_length=200)
-    origin_village = models.CharField(_('origin_village'), max_length=200)
-```
-
-Since you changed a model field (by adding the verbose name), you need to make migrations:
-
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-### Mark Template Strings
-
-Open `farm/templates/farm/base.html`.
-
-Add `{% load i18n %}` at the top.
-
-Change `<title>Soko Yetu</title>` to `<title>{% trans "Soko Yetu" %}</title>`.
-
-Open `farm/templates/farm/produce_list.html`.
-
-Add `{% load i18n %}` at the top (after `{% extends ... %}`).
-
-Mark the strings:
-
-```django
-<h2>{% trans "Available Produce" %}</h2>
-<p>{% trans "No produce is currently available." %}</p>
-```
-
-### Generate Translation Files
-
-Create the locale directory: `mkdir locale`
-
-Run makemessages for Swahili: `python manage.py makemessages -l sw`
-
-### Translate!
-
-Open the new file: `locale/sw/LC_MESSAGES/django.po`.
-
-You will see the strings you marked. Fill in the `msgstr ""` fields with the Swahili translations.
-
-Use these translations:
-
-```po
-#: farm/templates/farm/base.html:7
-msgid "Soko Yetu"
-msgstr "Soko Letu"
-
-#: farm/templates/farm/produce_list.html:6
-msgid "Available Produce"
-msgstr "Mazao Yanayopatikana"
-
-#: farm/templates/farm/produce_list.html:15
-msgid "No produce is currently available."
-msgstr "Hakuna mazao yanayopatikana kwa sasa."
-
-#: farm/models.py:5
-msgid "name"
-msgstr "Jina"
-
-#: farm/models.py:6
-msgid "origin_village"
-msgstr "Kijiji cha Asili"
-```
-
-Save the file.
-
-### Compile Translations
-
-Run: `python manage.py compilemessages`
-
-This creates the .mo file that Django actually uses.
-
-### Enable Language URLs
-
-Open `myproject/urls.py`.
-
-Import i18n_patterns: `from django.conf.urls.i18n import i18n_patterns`
-
-Modify your urlpatterns to wrap the farm app in i18n_patterns. This will create the /en/ and /sw/ URL prefixes.
-
-```python
-# Keep admin outside of i18n_patterns
-urlpatterns = [
-    path('admin/', admin.site.urls),
-]
-
-# Add these new patterns
-urlpatterns += i18n_patterns(
-    path('', include('farm.urls')),
-)
-```
-
-### Test Your i18n App
-
-```bash
-python manage.py runserver
-```
-
-Visit http://127.0.0.1:8000/en/. You should see the English site.
-
-Visit http://127.0.0.1:8000/sw/. You should see the Swahili site!
-
-## Part 3: Baseline the "Double Bottleneck" (15 Minutes)
-
-Before we fix it, let's see the problem.
-
-Open your browser's Dev Tools (F12 or Ctrl+Shift+I).
-
-Go to the Network tab.
-
-Check the "Disable cache" box.
-
-Load http://127.0.0.1:8000/sw/. Look at the Time for the main request. It might be 80ms, 150ms, or more. This is your "slow" baseline.
-
-Refresh the page. The time will be roughly the same.
-
-Load http://127.0.0.1:8000/en/. The time will also be slow.
-
-You are now experiencing the "Double Bottleneck" from our session: For every request, Django is hitting the database (`Produce.objects.all()`) and the disk (to read the .mo file).
-
-## Part 4: Implement Redis Caching (15 Minutes)
-
-Let's fix it.
-
-### Install django-redis
-
-```bash
-pip install django-redis
-```
-
-Add django-redis to your requirements.txt file.
-
-### Configure CACHES
-
-Open `myproject/settings.py`.
-
-Scroll to the bottom and add the CACHES setting.
-
-```python
-# Cache configuration
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        # This points to your local Docker container
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
+By completing this project, you will:
+
+- Analyze query performance and create **Indexes** to optimize data retrieval.
+- Write complex, multi-level **Subqueries** and advanced **JOINs** to answer sophisticated business questions.
+- Implement **Views** to simplify data access and enhance security.
+- Create **Stored Procedures** to encapsulate and automate repetitive, multi-step business logic.
+- Enforce complex business rules and maintain data integrity using **Triggers**.
+- Schedule automated, recurring database tasks using **Events**.
+
+## Phase 1 Standard Schema
+
+To ensure all teams are working from a consistent, normalized database, this Phase 2 assignment is based on the following official 5NF schema.
+
+Your Phase 1 implementation (your `01_create_tables.sql` and `02_insert_data.sql` scripts) must match this structure. All modules in this assignment assume your table and column names match this ERD.
+
+```mermaid
+erDiagram
+    clients {
+        int client_id PK "AUTO_INCREMENT"
+        varchar_100 client_name "NOT NULL, UNIQUE"
+        varchar_20 client_phone
     }
-}
+    projects {
+        varchar_10 project_id PK "e.g., 'P001'"
+        varchar_100 project_name "NOT NULL"
+        varchar_200 site_address
+        varchar_50 site_city
+        date start_date
+        date end_date
+        decimal_12_2 budget
+        int client_id FK "REFERENCES clients(client_id)"
+    }
+    workers {
+        int worker_id PK "AUTO_INCREMENT"
+        varchar_100 first_name "NOT NULL"
+        varchar_100 last_name "NOT NULL"
+        varchar_20 phone
+        decimal_10_2 salary
+    }
+    skills {
+        int skill_id PK "AUTO_INCREMENT"
+        varchar_100 skill_name "NOT NULL, UNIQUE"
+    }
+    worker_skills {
+        int worker_id FK "REFERENCES workers(worker_id)"
+        int skill_id FK "REFERENCES skills(skill_id)"
+    }
+    certifications {
+        int cert_id PK "AUTO_INCREMENT"
+        varchar_100 cert_name "NOT NULL"
+        date expiry_date
+        int worker_id FK "REFERENCES workers(worker_id)"
+    }
+    project_assignments {
+        int assignment_id PK "AUTO_INCREMENT"
+        int worker_id FK "REFERENCES workers(worker_id)"
+        varchar_10 project_id FK "REFERENCES projects(project_id)"
+        date assignment_date
+    }
+    suppliers {
+        int supplier_id PK "AUTO_INCREMENT"
+        varchar_100 supplier_name "NOT NULL"
+        varchar_20 supplier_phone
+    }
+    materials {
+        int material_id PK "AUTO_INCREMENT"
+        varchar_100 material_name "NOT NULL"
+        decimal_10_2 unit_cost "NOT NULL"
+    }
+    project_materials {
+        int project_material_id PK "AUTO_INCREMENT"
+        varchar_10 project_id FK "REFERENCES projects(project_id)"
+        int material_id FK "REFERENCES materials(material_id)"
+        int supplier_id FK "REFERENCES suppliers(supplier_id)"
+        int quantity "NOT NULL"
+        decimal_12_2 total_cost "NOT NULL"
+    }
+    clients ||--o{ projects : "has"
+    projects ||--|| project_assignments : "has"
+    workers ||--|| project_assignments : "assigned to"
+    workers ||--|| worker_skills : "has"
+    skills ||--|| worker_skills : "possessed by"
+    workers ||--o{ certifications : "holds"
+    projects ||--o{ project_materials : "uses"
+    materials ||--o{ project_materials : "used in"
+    suppliers ||--o{ project_materials : "supplies"
 ```
 
-### Implement Template Caching
+## Project Setup & Delivery
 
-Open `farm/templates/farm/produce_list.html`.
+This assignment builds directly on your "Phase 1" implementation. You will use the `big3_construction` database you built and populated according to the standard schema provided above.
 
-At the top, under `{% load i18n %}`, add `{% load cache %}`.
+- **GitHub Classroom:** Accept the "Phase 2" assignment from the link on Canvas. This will create a new repository for your team, pre-populated with a folder structure and this README.md.
+- **Viewing the Schema Diagram:** To view the Mermaid ERD diagram in this README within VS Code:
+  1. Open the Extensions panel (`Ctrl+Shift+X` or `Cmd+Shift+X` on Mac)
+  2. Search for "Markdown Preview Mermaid Support"
+  3. Install the extension by Matt Bierner
+  4. Open this README.md and press `Ctrl+Shift+V` (or `Cmd+Shift+V` on Mac) to open the Markdown preview
+  5. The Entity-Relationship Diagram will now render visually
+  
+  *Note: The diagram also renders automatically when you view this README on GitHub.com*
+- **Tools:** We recommend DataGrip as its database management features are excellent for this task. You can manage your scripts, run queries, and easily inspect your database objects (like views, procedures, and triggers) from the UI. However, you may use any tool you are comfortable with (MySQL Workbench, DBeaver, etc.).
+- **Collaboration:** This is a pair programming assignment. We highly recommend you work on the logic for the "Challenge" sections together, either in person or over a screen share.
 
-Wrap the entire produce list section in a `{% cache %}` tag. We'll set a 10-minute (600 seconds) cache.
+## Submission Requirements
 
-```django
-{% extends 'farm/base.html' %}
-{% load i18n %}
-{% load cache %}
+You will submit your work by committing your SQL files to your GitHub Classroom repository. Your repository must contain the following files:
 
-{% block content %}
+- `01_indexes.sql`: All SQL for Module 1.
+- `02_subqueries.sql`: All SQL queries for Module 2.
+- `03_views.sql`: All SQL for Module 3.
+- `04_procedures.sql`: All SQL for Module 4.
+- `05_triggers.sql`: All SQL for Module 5.
+- `06_events.sql`: All SQL for Module 6.
+- `README.md`: You must edit this file to add your justifications for the "Challenge" sections and a brief Team Contribution Statement at the end.
 
-{% cache 600 produce_list_fragment request.LANGUAGE_CODE %}
-  <h2 class="text-2xl font-semibold mb-4">{% trans "Available Produce" %}</h2>
 
-  <div class... >
-    {% for produce in produce_list %}
-      <div class="bg-white p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold">{{ produce.name }}</h3>
-        <p class="text-gray-600">{{ produce.origin_village }}</p>
-      </div>
-    {% empty %}
-      <p>{% trans "No produce is currently available." %}</p>
-    {% endfor %}
-  </div>
-{% endcache %}
+## Assignment Modules
 
-{% endblock %}
-```
+Follow each module in order. Each one contains a Client Request, a Guided Activity to learn the concept, and a Challenge Task to apply your knowledge.
 
-The key is `request.LANGUAGE_CODE`. This tells Django to create a separate cache for 'en' and 'sw'.
+### [Module 1: Indexes (The "Need for Speed")](module-1/README.md)
 
-## Part 5: Verify & Reflect (15 Minutes)
+### [Module 2: Subqueries & Advanced Joins (The "Complex Questions")](module-2/README.md)
 
-### Test the Magic
+### [Module 3: Views (The "Simple & Secure" Reports)](module-3/README.md)
 
-Stop your server (Ctrl+C) and restart it (`python manage.py runserver`).
+### [Module 4: Stored Procedures (The "One-Click" Tasks)](module-4/README.md)
 
-Go to http://127.0.0.1:8000/sw/. Keep your Network tab open (with "Disable cache" UNCHECKED).
+### [Module 5: Triggers (The "Automatic Rule-Enforcer")](module-5/README.md)
 
-Hard Refresh (Ctrl+Shift+R or Cmd+Shift+R). Note the time. This is the "slow" Cache Miss (~80ms).
+### [Module 6: Events (The "Scheduled Maintenance")](module-6/README.md)
 
-Now, Normal Refresh (F5 or Cmd+R). Look at the time. It should be tiny (~5-10ms). This is the Cache Hit!
+## Resources & Support
 
-Switch to English: http://127.0.0.1:8000/en/. The first load will be a "Cache Miss" for English.
+### Official Documentation
 
-Refresh the English page. It will now be a "Cache Hit."
+- **MySQL Reference Manual:** [https://dev.mysql.com/doc/refman/8.0/en/](https://dev.mysql.com/doc/refman/8.0/en/)
+  - Indexes: [https://dev.mysql.com/doc/refman/8.0/en/optimization-indexes.html](https://dev.mysql.com/doc/refman/8.0/en/optimization-indexes.html)
+  - Subqueries: [https://dev.mysql.com/doc/refman/8.0/en/subqueries.html](https://dev.mysql.com/doc/refman/8.0/en/subqueries.html)
+  - Views: [https://dev.mysql.com/doc/refman/8.0/en/views.html](https://dev.mysql.com/doc/refman/8.0/en/views.html)
+  - Stored Procedures: [https://dev.mysql.com/doc/refman/8.0/en/stored-routines.html](https://dev.mysql.com/doc/refman/8.0/en/stored-routines.html)
+  - Triggers: [https://dev.mysql.com/doc/refman/8.0/en/triggers.html](https://dev.mysql.com/doc/refman/8.0/en/triggers.html)
+  - Events: [https://dev.mysql.com/doc/refman/8.0/en/events.html](https://dev.mysql.com/doc/refman/8.0/en/events.html)
 
-### See the "Stale Cache" Problem
+### Getting Help
 
-Go to your admin: http://127.0.0.1:8000/admin/.
+- **Office Hours:** Check Canvas for your instructor's availability
+- **Discussion Forum:** Use the Canvas discussion board to ask questions and help your peers
+- **Team Communication:** Establish regular check-ins with your team members
+- **Debugging Tips:**
+  - Use `EXPLAIN` to analyze query performance
+  - Test each database object individually before combining them
+  - Check error logs if stored procedures, triggers, or events fail
+  - Use `SHOW WARNINGS;` to identify issues with your SQL statements
 
-Add a new item: "Onions" from "Arusha".
+### Recommended Practices
 
-Go back to the site (/en/ or /sw/) and refresh. The "Onions" are not there!
+- Commit your work frequently to GitHub with descriptive commit messages
+- Test all SQL scripts in a development environment before finalizing
+- Document your reasoning for design decisions, especially in challenge sections
+- Review each other's code within your team before submission
+- Keep a log of issues encountered and how you resolved them
 
-This is because Django is serving the fast, 10-minute-old cache. It doesn't know the database has changed.
+## AI Usage Policy
 
-### Reflection (Your "Deliverable")
+### Permitted Uses
 
-Create a new text file named `reflection.txt` and answer the following:
+This assignment is designed to help you develop practical database administration skills that you will use in your professional career. You may use AI tools (such as GitHub Copilot, ChatGPT, or similar) in the following ways:
 
-**Q1:** Explain the "Double Bottleneck" problem in your own words. What two "slow" operations were we fixing?
+- **Syntax assistance:** Getting help with SQL syntax, function parameters, or command structure
+- **Debugging support:** Understanding error messages and identifying potential issues in your code
+- **Concept clarification:** Asking for explanations of database concepts covered in the modules
+- **Code review:** Having AI review your code for potential improvements or best practices
+- **Documentation:** Generating comments or documentation for your completed code
 
-**Q2:** What exactly did `request.LANGUAGE_CODE` do in the `{% cache ... %}` tag? What would happen if you left it out and a user switched from English to Swahili?
+### Required Practices
 
-**Q3:** You just saw the "stale cache" problem (in Step 5.2). Based on our session, what is the solution to this? What Django feature would you use to automatically delete the cache when a Produce item is saved?
+When using AI tools, you must:
 
-## Bonus Challenge (If you have time)
+1. **Understand every line of code:** You are responsible for understanding and being able to explain all code you submit, regardless of its source
+2. **Adapt and customize:** Do not submit AI-generated code without reviewing, testing, and adapting it to the specific requirements of Big3 Construction
+3. **Document AI usage:** In your Team Contribution Statement, acknowledge when AI tools were used and how they assisted your work
+4. **Verify correctness:** AI-generated solutions may contain errors or inefficiencies. Test thoroughly and validate against the assignment requirements
 
-Read the Django documentation on cache invalidation with signals.
+### Prohibited Uses
 
-Try to implement it!
+The following uses of AI are not permitted:
 
-- Create a new file `farm/signals.py`.
-- Import the Produce model, receiver, post_save, post_delete, and cache.
-- Write a function (or two) decorated with `@receiver(post_save, sender=Produce)` and `@receiver(post_delete, sender=Produce)`.
-- Inside this function, you need to delete the cache. But how do you get the key name? Read about `make_template_fragment_key` from `django.core.cache.utils`.
-- Import and register your signals in `farm/apps.py`.
-- Test it! Does adding "Onions" in the admin immediately clear the cache and show the new item on the site?
+- Submitting entire modules or solutions generated by AI without understanding or modification
+- Using AI to complete the assignment without genuine engagement with the learning objectives
+- Copying AI-generated code that you cannot explain or defend during discussions
+- Relying solely on AI instead of consulting official documentation and course materials
+
+### Academic Integrity
+
+Remember that the goal of this assignment is to develop your skills and understanding. While AI can be a valuable tool, it should enhance your learning, not replace it. You will be expected to discuss and defend your design decisions in team presentations or individual assessments. Work that demonstrates a lack of understanding or engagement with the material may be subject to academic integrity review.
+
+If you have questions about appropriate AI usage for specific situations, consult with me before proceeding.
+
+## Challenge Justifications
+
+### Module 1 Challenge: Index Design
+
+For the frequent query pattern "filter by `site_city` then sort by `start_date`" on table `projects`, we added the composite index `idx_projects_city_date` on `(site_city, start_date)`.
+
+- Filtering column first: `site_city` improves selectivity for the WHERE clause.
+- Sorting column second: `start_date` allows the optimizer to return rows already ordered, avoiding an extra sort.
+- The index can be used for both equality/range filters on `site_city` and for ORDER BY `start_date` within each city.
+
+### Module 2 Notes: Subqueries & Advanced Joins
+
+We prepared queries that demonstrate common patterns required in this module:
+
+- Workers earning above the average salary (scalar subquery).
+- Projects where total material cost exceeds 50% of budget (aggregate with HAVING over a join).
+- Workers without assignments (NOT EXISTS anti-join).
+- Clients without projects (NOT EXISTS anti-join).
+
+These are placed in `02_subqueries.sql` and align with the schema provided in this README.
+
+## Team Contribution Statement
+
+Initial repository setup for Modules 1 and 2 completed: created `01_indexes.sql` and `02_subqueries.sql`, added Module 1 index justification, and outlined Module 2 query rationale. Remaining modules will be completed collaboratively.
+
+## Final Deliverable Check
+
+- ☐ `01_indexes.sql`
+- ☐ `02_subqueries.sql`
+- ☐ `03_views.sql`
+- ☐ `04_procedures.sql`
+- ☐ `05_triggers.sql`
+- ☐ `06_events.sql`
+- ☐ `README.md` is updated with all challenge justifications and the Team Contribution Statement.
+- ☐ All SQL is well-commented and runnable.
+
+
+
+Good luck, consultants!
